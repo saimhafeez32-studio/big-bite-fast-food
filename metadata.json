@@ -1,0 +1,6 @@
+{
+  "name": "Big Bite Fast Food",
+  "description": "Premium, fast, and smooth fast food ordering platform for Big Bite featuring hot burgers, crispy chicken, loaded sides, combos, direct item purchase, and seamless checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
