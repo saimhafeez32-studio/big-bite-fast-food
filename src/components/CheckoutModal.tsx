@@ -124,7 +124,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         quantity: quantity,
         total: `$${total.toFixed(2)}`
       },
-      'YOUR_PUBLIC_KEY'
+      'T9RYKIcaUyKfCqmB2'
     );
 
     // Create order
