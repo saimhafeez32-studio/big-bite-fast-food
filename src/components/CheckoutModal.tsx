@@ -112,20 +112,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         ? formData.address
         : 'Self Pickup';
 
-    // Send order notification to your Gmail
-    await emailjs.send(
-      'service_c4ixsjw',
-      'template_imecCru',
-      {
-        name: formData.fullName,
-        phone: formData.phone,
-        address: address,
-        product: product,
-        quantity: quantity,
-        total: `$${total.toFixed(2)}`
-      },
-      'T9RYKIcaUyKfCqmB2'
-    );
+    // Send email notification, but don't block the order if EmailJS fails
+    try {
+        await emailjs.send(
+        'service_c4ixsjw',
+        'template_imec0ru',
+    {
+      name: formData.fullName,
+      phone: formData.phone,
+      address: address,
+      product: product,
+      quantity: quantity,
+      total: `$${total.toFixed(2)}`
+    },
+    'T9RYKIcaUyKfCqmB2'
+  );
+  } catch (emailError) {
+    console.error('EmailJS notification failed:', emailError);
+  }
 
     // Create order
     const generatedOrderId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
