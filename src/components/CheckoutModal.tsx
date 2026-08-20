@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import emailjs from '@emailjs/browser';
 import { X, MapPin, Truck, Store, CreditCard, DollarSign, Wallet, ArrowLeft, CheckCircle2, ShieldCheck, Clock, Flame, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CartItem, CustomerInfo, DeliveryType, PaymentMethod, OrderDetails } from '../types';
@@ -65,67 +66,105 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError('');
+  const handleFormSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setValidationError('');
 
-    if (cartItems.length === 0) {
-      setValidationError('Your bag is currently empty. Please add items before placing an order.');
-      return;
-    }
+  if (cartItems.length === 0) {
+    setValidationError('Your bag is currently empty. Please add items before placing an order.');
+    return;
+  }
 
-    if (!formData.fullName.trim()) {
-      setValidationError('Please enter your full name.');
-      return;
-    }
-    if (!formData.phone.trim() || formData.phone.length < 7) {
-      setValidationError('Please provide a valid contact phone number.');
-      return;
-    }
-    if (deliveryType === 'delivery' && (!formData.address || formData.address.trim().length < 5)) {
-      setValidationError('Please enter a complete delivery address.');
-      return;
-    }
+  if (!formData.fullName.trim()) {
+    setValidationError('Please enter your full name.');
+    return;
+  }
 
-    setIsSubmitting(true);
+  if (!formData.phone.trim() || formData.phone.length < 7) {
+    setValidationError('Please provide a valid contact phone number.');
+    return;
+  }
 
-    // Trigger celebratory confetti!
-    try {
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#E50914', '#FFB800', '#FFFFFF', '#22C55E']
-      });
-    } catch {
-      // safe fallback
-    }
+  if (
+    deliveryType === 'delivery' &&
+    (!formData.address || formData.address.trim().length < 5)
+  ) {
+    setValidationError('Please enter a complete delivery address.');
+    return;
+  }
 
-    setTimeout(() => {
-      const generatedOrderId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
-      const order: OrderDetails = {
-        orderId: generatedOrderId,
-        items: [...cartItems],
-        customerInfo: {
-          ...formData,
-          pickupBranch: deliveryType === 'pickup' ? selectedBranch : undefined
-        },
-        deliveryType,
-        paymentMethod,
-        subtotal,
-        discount,
-        deliveryFee,
-        tax,
-        total,
-        promoCodeApplied: appliedPromo || undefined,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'confirmed',
-        estimatedMinutes: deliveryType === 'pickup' ? 15 : 30
-      };
+  setIsSubmitting(true);
 
-      setIsSubmitting(false);
-      onOrderPlaced(order);
-    }, 1200);
+  try {
+    // Product names
+    const product = cartItems
+      .map((ci) => ci.item.name)
+      .join(', ');
+
+    // Quantities
+    const quantity = cartItems
+      .map((ci) => `${ci.quantity}x`)
+      .join(', ');
+
+    // Address
+    const address =
+      deliveryType === 'delivery'
+        ? formData.address
+        : 'Self Pickup';
+
+    // Send order notification to your Gmail
+    await emailjs.send(
+      'service_c4ixsjw',
+      'template_imecCru',
+      {
+        name: formData.fullName,
+        phone: formData.phone,
+        address: address,
+        product: product,
+        quantity: quantity,
+        total: `$${total.toFixed(2)}`
+      },
+      'YOUR_PUBLIC_KEY'
+    );
+
+    // Create order
+    const generatedOrderId = `BB-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const order: OrderDetails = {
+      orderId: generatedOrderId,
+      items: [...cartItems],
+      customerInfo: {
+        ...formData,
+        pickupBranch:
+          deliveryType === 'pickup' ? selectedBranch : undefined
+      },
+      deliveryType,
+      paymentMethod,
+      subtotal,
+      discount,
+      deliveryFee,
+      tax,
+      total,
+      promoCodeApplied: appliedPromo || undefined,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      status: 'confirmed',
+      estimatedMinutes: deliveryType === 'pickup' ? 15 : 30
+    };
+
+    setIsSubmitting(false);
+    onOrderPlaced(order);
+
+  } catch (error) {
+    console.error('EmailJS error:', error);
+
+    setIsSubmitting(false);
+    setValidationError(
+      'Order notification could not be sent. Please try again.'
+    );
+  }
   };
 
   return (
